@@ -50,7 +50,7 @@ async def search(
 
     # Fuzzy (word-similarity) path: enabled only for single-word queries ≥ 4 chars.
     # word_similarity('renen', text) ≥ 0.25 catches 1-char substitutions in 5-char words
-    # (e.g. renen→renan) without flooding results for short or multi-word searches.
+    # without flooding results for short or multi-word searches.
     _q_words = q.split()
     _do_fuzzy = (
         len(_q_words) == 1

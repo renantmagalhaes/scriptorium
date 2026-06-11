@@ -149,8 +149,8 @@ The search bar accepts PostgreSQL `websearch_to_tsquery` syntax plus automatic f
 
 | What you type | How it matches |
 |---|---|
-| `renan` | Full-text + prefix (`renan*`) + trigram substring |
-| `renen` | Fuzzy match (typo tolerance via `word_similarity`) — single word, ≥ 4 chars |
+| `apple` | Full-text + prefix (`apple*`) + trigram substring |
+| `epple` | Fuzzy match (typo tolerance via `word_similarity`) — single word, ≥ 4 chars |
 | `main.tf` | Trigram substring — finds terms embedded in technical strings |
 | `201790130509` | Digit-normalised — strips separators, matches the raw digit sequence anywhere in the text |
 | `314 493 050` | Same digit-normalised path — spaces/dashes between digits are ignored |
