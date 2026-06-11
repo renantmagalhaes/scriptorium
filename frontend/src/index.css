@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Highlight color for ts_headline <mark> tags */
+mark {
+  background-color: #fde047; /* yellow-300 */
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}

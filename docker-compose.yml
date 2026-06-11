@@ -1,0 +1,154 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Scriptorium — self-hosted OCR + full-text search
+#
+# Network layout:
+#   internal  (internal: true) — postgres, redis, scanner, workers.
+#             No host ports published, no outbound internet.
+#   web       (normal bridge)  — only the web service joins this.
+#             Required so Docker can actually publish the host port; a
+#             container on ONLY an internal:true network cannot have ports
+#             forwarded to the host.
+#   Web can still reach postgres/redis because it is also on `internal`.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-scriptorium}
+      POSTGRES_USER:     ${POSTGRES_USER:?POSTGRES_USER required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+      --appendonly yes
+      --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Web / API ────────────────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB:-scriptorium}
+      REDIS_URL:    redis://:${REDIS_PASSWORD}@redis:6379/0
+      CORPUS_ROOT:  /corpus
+      UI_USERNAME:  ${UI_USERNAME:?UI_USERNAME required}
+      UI_PASSWORD:  ${UI_PASSWORD:?UI_PASSWORD required}
+      SECRET_KEY:   ${SECRET_KEY:?SECRET_KEY required}
+    volumes:
+      - ${CORPUS_PATH:?CORPUS_PATH required}:/corpus:ro
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    networks:
+      - internal   # reach postgres + redis
+      - web        # allow host port publishing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+
+  # ── Scanner ──────────────────────────────────────────────────────────────────
+  scanner:
+    build:
+      context: .
+      dockerfile: scanner/Dockerfile
+    environment:
+      DATABASE_URL:   postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB:-scriptorium}
+      REDIS_URL:      redis://:${REDIS_PASSWORD}@redis:6379/0
+      CORPUS_ROOT:    /corpus
+      SCAN_INTERVAL:  ${SCAN_INTERVAL:-300}
+      MISS_THRESHOLD: ${MISS_THRESHOLD:-2}
+    volumes:
+      - ${CORPUS_PATH}:/corpus:ro
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+
+  # ── OCR workers ───────────────────────────────────────────────────────────────
+  ocr-worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB:-scriptorium}
+      REDIS_URL:    redis://:${REDIS_PASSWORD}@redis:6379/0
+      CORPUS_ROOT:  /corpus
+      OCR_ENGINE:   ${OCR_ENGINE:-tesseract}
+    volumes:
+      - ${CORPUS_PATH}:/corpus:ro
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: ${OCR_WORKER_COUNT:-4}
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    cap_drop:
+      - ALL
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  internal:
+    internal: true   # postgres/redis/scanner/workers — no host ports, no internet
+  web: {}            # web service only — enables host port publishing
