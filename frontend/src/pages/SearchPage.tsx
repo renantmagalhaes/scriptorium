@@ -11,7 +11,7 @@ export default function SearchPage() {
   const [inputValue, setInputValue] = useState('')
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
-  const [viewerPath, setViewerPath] = useState<string | null>(null)
+  const [viewerFile, setViewerFile] = useState<{ path: string; docId?: number } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Debounce: fire search 350 ms after the user stops typing.
@@ -93,7 +93,7 @@ export default function SearchPage() {
           {/* Cards */}
           <div className="flex flex-col gap-3">
             {data.results.map((r) => (
-              <ResultCard key={r.doc_id} result={r} onOpen={setViewerPath} />
+              <ResultCard key={r.doc_id} result={r} onOpen={(path, docId) => setViewerFile({ path, docId })} />
             ))}
           </div>
 
@@ -125,7 +125,7 @@ export default function SearchPage() {
       )}
     </div>
 
-    <FileViewerModal path={viewerPath} onClose={() => setViewerPath(null)} />
+    <FileViewerModal path={viewerFile?.path ?? null} docId={viewerFile?.docId ?? null} onClose={() => setViewerFile(null)} />
 </>
   )
 }

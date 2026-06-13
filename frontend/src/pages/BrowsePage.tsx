@@ -94,7 +94,7 @@ function StatusDot({ status }: { status: string }) {
 interface RowProps {
   node:   TreeNode
   level:  number
-  onOpen: (path: string) => void
+  onOpen: (path: string, id?: number) => void
 }
 
 function TreeRow({ node, level, onOpen }: RowProps) {
@@ -127,7 +127,7 @@ function TreeRow({ node, level, onOpen }: RowProps) {
 
   return (
     <button
-      onClick={() => onOpen(node.path)}
+      onClick={() => onOpen(node.path, node.id)}
       className="flex items-center gap-1.5 w-full text-left py-1 pr-2 rounded hover:bg-slate-100 transition-colors group"
       style={{ paddingLeft: `${pad + 8 + 13 + 6}px` }}
     >
@@ -144,7 +144,7 @@ function TreeRow({ node, level, onOpen }: RowProps) {
 
 export default function BrowsePage() {
   const navigate = useNavigate()
-  const [viewerPath, setViewerPath]   = useState<string | null>(null)
+  const [viewerFile, setViewerFile]   = useState<{ path: string; id?: number } | null>(null)
   const [filterQuery, setFilterQuery] = useState('')
 
   const { data, isLoading, isError } = useQuery({
@@ -227,7 +227,7 @@ export default function BrowsePage() {
                   className="flex items-center gap-2 px-3 py-2 rounded hover:bg-slate-100 transition-colors group"
                 >
                   <button
-                    onClick={() => setViewerPath(item.path)}
+                    onClick={() => setViewerFile({ path: item.path, id: item.id })}
                     className="flex items-center gap-2 flex-1 min-w-0 text-left"
                   >
                     <FileIcon name={name} />
@@ -241,7 +241,7 @@ export default function BrowsePage() {
                   <div className="shrink-0 flex items-center gap-1.5">
                     <button
                       onClick={() => navigate(`/docs/${item.id}/text`)}
-                      className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors opacity-0 group-hover:opacity-100"
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors md:opacity-0 md:group-hover:opacity-100 opacity-100"
                       title="View / edit extracted text"
                     >
                       <ScrollText size={11} />
@@ -259,13 +259,13 @@ export default function BrowsePage() {
         {filtered === null && tree.length > 0 && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2 select-none">
             {tree.map((node) => (
-              <TreeRow key={node.path} node={node} level={0} onOpen={setViewerPath} />
+              <TreeRow key={node.path} node={node} level={0} onOpen={(path, id) => setViewerFile({ path, id })} />
             ))}
           </div>
         )}
       </div>
 
-      <FileViewerModal path={viewerPath} onClose={() => setViewerPath(null)} />
+      <FileViewerModal path={viewerFile?.path ?? null} docId={viewerFile?.id ?? null} onClose={() => setViewerFile(null)} />
     </>
   )
 }

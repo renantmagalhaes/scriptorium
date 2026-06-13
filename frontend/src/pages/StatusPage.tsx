@@ -107,38 +107,40 @@ export default function StatusPage() {
                 Recent errors ({data.recent_errors.length})
               </h2>
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="text-left px-4 py-2.5 font-medium text-slate-600">Path</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-slate-600">Error</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">
-                        Updated
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {data.recent_errors.map((e) => (
-                      <tr key={e.id} className="hover:bg-red-50 transition-colors">
-                        <td
-                          className="px-4 py-3 font-mono text-xs text-slate-700 max-w-[240px] truncate"
-                          title={e.path}
-                        >
-                          {e.path}
-                        </td>
-                        <td
-                          className="px-4 py-3 text-red-600 max-w-[360px] truncate"
-                          title={e.error_detail ?? ''}
-                        >
-                          {e.error_detail ?? '—'}
-                        </td>
-                        <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
-                          {formatDate(e.updated_at)}
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="text-left px-4 py-2.5 font-medium text-slate-600">Path</th>
+                        <th className="text-left px-4 py-2.5 font-medium text-slate-600">Error</th>
+                        <th className="text-left px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">
+                          Updated
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {data.recent_errors.map((e) => (
+                        <tr key={e.id} className="hover:bg-red-50 transition-colors">
+                          <td
+                            className="px-4 py-3 font-mono text-xs text-slate-700 max-w-[240px] truncate"
+                            title={e.path}
+                          >
+                            {e.path}
+                          </td>
+                          <td
+                            className="px-4 py-3 text-red-600 max-w-[360px] truncate"
+                            title={e.error_detail ?? ''}
+                          >
+                            {e.error_detail ?? '—'}
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
+                            {formatDate(e.updated_at)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

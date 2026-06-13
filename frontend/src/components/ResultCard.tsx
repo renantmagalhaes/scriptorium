@@ -6,7 +6,7 @@ import PathBreadcrumb from './PathBreadcrumb'
 
 interface Props {
   result:  SearchResult
-  onOpen?: (path: string) => void
+  onOpen?: (path: string, docId?: number) => void
 }
 
 function formatDate(iso: string) {
@@ -36,17 +36,17 @@ export default function ResultCard({ result, onOpen }: Props) {
       {/* Body */}
       <div className="flex-1 min-w-0">
         {/* Path + actions */}
-        <div className="flex items-start justify-between gap-3 mb-1">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-2">
           <div className="min-w-0">
-            <p className="font-semibold text-slate-800 truncate" title={result.path}>
+            <p className="font-semibold text-slate-800 text-sm sm:text-base truncate" title={result.path}>
               {name}
             </p>
             <PathBreadcrumb path={result.path} includeFile className="mt-0.5" />
           </div>
-          <div className="shrink-0 flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {onOpen && (
               <button
-                onClick={() => onOpen(result.path)}
+                onClick={() => onOpen(result.path, result.doc_id)}
                 className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium"
                 title="Open preview"
               >

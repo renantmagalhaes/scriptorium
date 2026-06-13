@@ -13,15 +13,15 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       {/* ── Navbar ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-6">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between md:justify-start gap-6">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 text-indigo-600 font-semibold text-lg shrink-0">
             <BookOpen size={20} />
             <span>Scriptorium</span>
           </Link>
 
-          {/* Nav links */}
-          <nav className="flex items-center gap-1 flex-1">
+          {/* Nav links (hidden on mobile, visible on desktop) */}
+          <nav className="hidden md:flex items-center gap-1 flex-1">
             <NavLink
               to="/"
               end
@@ -84,15 +84,64 @@ export default function Layout() {
             title="Log out"
           >
             <LogOut size={14} />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="hidden md:inline">Logout</span>
           </button>
         </div>
       </header>
 
       {/* ── Page content ────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8 pb-24 md:pb-8">
         <Outlet />
       </main>
+
+      {/* ── Bottom Navbar for Mobile ─────────────────────────────────────── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-slate-200 shadow-lg flex justify-around items-center h-16 md:hidden">
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center w-full h-full text-xs font-medium transition-colors ${
+              isActive ? 'text-indigo-600' : 'text-slate-500'
+            }`
+          }
+        >
+          <Search size={18} className="mb-0.5" />
+          <span>Search</span>
+        </NavLink>
+        <NavLink
+          to="/browse"
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center w-full h-full text-xs font-medium transition-colors ${
+              isActive ? 'text-indigo-600' : 'text-slate-500'
+            }`
+          }
+        >
+          <FolderOpen size={18} className="mb-0.5" />
+          <span>Browse</span>
+        </NavLink>
+        <NavLink
+          to="/status"
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center w-full h-full text-xs font-medium transition-colors ${
+              isActive ? 'text-indigo-600' : 'text-slate-500'
+            }`
+          }
+        >
+          <LayoutDashboard size={18} className="mb-0.5" />
+          <span>Status</span>
+        </NavLink>
+        <NavLink
+          to="/admin"
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center w-full h-full text-xs font-medium transition-colors ${
+              isActive ? 'text-indigo-600' : 'text-slate-500'
+            }`
+          }
+        >
+          <Settings size={18} className="mb-0.5" />
+          <span>Admin</span>
+        </NavLink>
+      </nav>
     </div>
   )
 }
