@@ -1,9 +1,21 @@
-# Scriptorium
+# <img src="docs/imgs/book-open.svg" alt="Logo" width="28" height="28" valign="middle" /> Scriptorium
 
 A self-hosted document archive with OCR and full-text search. Point it at a read-only folder of PDFs, images, and Office files; it extracts text in the background and gives you a fast search UI over everything.
 
 > [!NOTE]
 > **What is a Scriptorium?** Historically, a *scriptorium* (literally "a place for writing") was a room in medieval European monasteries devoted to the writing, copying, and illuminating of manuscripts by monastic scribes. True to its name, this app acts as your digital scriptorium—automatically copying, reading, and indexing all your documents.
+
+## Preview
+
+<p align="center">
+  <img src="docs/imgs/theme_light.png" alt="Light Theme" width="32%" />
+  <img src="docs/imgs/theme_dark.png" alt="Dark Theme" width="32%" />
+  <img src="docs/imgs/theme_cyber.png" alt="Cyber Theme" width="32%" />
+</p>
+
+<p align="center">
+  <img src="docs/imgs/status_page.png" alt="Status Page" width="65%" />
+</p>
 
 ---
 
