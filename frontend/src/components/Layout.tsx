@@ -1,5 +1,86 @@
+import { useEffect, useState, useRef } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BookOpen, FolderOpen, LayoutDashboard, LogOut, Search, Settings } from 'lucide-react'
+import { BookOpen, FolderOpen, LayoutDashboard, LogOut, Search, Settings, Sun, Moon, Sparkles, ChevronDown } from 'lucide-react'
+
+type Theme = 'light' | 'dark' | 'cyber'
+
+function ThemeSelector() {
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = localStorage.getItem('theme') as Theme
+    if (saved === 'dark' || saved === 'cyber' || saved === 'light') {
+      return saved
+    }
+    return 'light'
+  })
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const html = document.documentElement
+    html.classList.remove('theme-dark', 'theme-cyber')
+    if (theme === 'dark') {
+      html.classList.add('theme-dark')
+    } else if (theme === 'cyber') {
+      html.classList.add('theme-cyber')
+    }
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const themes: { value: Theme; label: string; icon: React.ReactNode }[] = [
+    { value: 'light', label: 'Light', icon: <Sun size={14} className="text-amber-500" /> },
+    { value: 'dark', label: 'Dark', icon: <Moon size={14} className="text-slate-400" /> },
+    { value: 'cyber', label: 'Cyber', icon: <Sparkles size={14} className="text-cyan-400" /> },
+  ]
+
+  const currentTheme = themes.find((t) => t.value === theme) || themes[0]
+
+  return (
+    <div className="relative font-sans" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 transition-colors bg-white font-medium shadow-sm"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+      >
+        {currentTheme.icon}
+        <span className="hidden sm:inline capitalize text-xs font-semibold">{currentTheme.value}</span>
+        <ChevronDown size={12} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1 w-32 rounded-lg border border-slate-200 bg-white shadow-lg z-20 py-1 origin-top-right transition-all">
+          {themes.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => {
+                setTheme(t.value)
+                setIsOpen(false)
+              }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                theme === t.value
+                  ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {t.icon}
+              <span className="text-xs font-medium">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Layout() {
   const navigate = useNavigate()
@@ -77,15 +158,18 @@ export default function Layout() {
             </NavLink>
           </nav>
 
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-            title="Log out"
-          >
-            <LogOut size={14} />
-            <span className="hidden md:inline">Logout</span>
-          </button>
+          {/* Actions: Theme Selector & Logout */}
+          <div className="flex items-center gap-3 shrink-0">
+            <ThemeSelector />
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+              title="Log out"
+            >
+              <LogOut size={14} />
+              <span className="hidden md:inline">Logout</span>
+            </button>
+          </div>
         </div>
       </header>
 

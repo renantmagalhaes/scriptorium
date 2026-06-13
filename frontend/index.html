@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Scriptorium</title>
+    <script>
+      (function() {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') {
+          document.documentElement.classList.add('theme-dark');
+        } else if (saved === 'cyber') {
+          document.documentElement.classList.add('theme-cyber');
+        }
+      })();
+    </script>
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased">
     <div id="root"></div>

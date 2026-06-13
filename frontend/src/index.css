@@ -2,10 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme CSS Variables */
+:root {
+  --bg-color: #f8fafc; /* slate-50 */
+  --bg-card: #ffffff; /* white */
+  --border-color: #e2e8f0; /* slate-200 */
+  --border-color-muted: #cbd5e1; /* slate-300 */
+  --text-main: #0f172a; /* slate-900 */
+  --text-muted: #64748b; /* slate-500 */
+  --accent-primary: #4f46e5; /* indigo-600 */
+  --accent-primary-hover: #4338ca; /* indigo-700 */
+  --accent-secondary: #f1f5f9; /* slate-100 / indigo-50 */
+  --accent-secondary-hover: #e2e8f0; /* indigo-100 */
+  --accent-text: #ffffff;
+  --mark-bg: #fde047; /* yellow-300 */
+  --mark-color: inherit;
+}
+
+html.theme-dark {
+  --bg-color: #000000;              /* True AMOLED Black */
+  --bg-card: #0a0a0a;               /* Translucent Dark Card */
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-muted: rgba(255, 255, 255, 0.15);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent-primary: #ffffff;        /* Pure White */
+  --accent-primary-hover: #e2e8f0;
+  --accent-secondary: rgba(255, 255, 255, 0.05);
+  --accent-secondary-hover: rgba(255, 255, 255, 0.1);
+  --accent-text: #000000;
+  --mark-bg: rgba(255, 255, 255, 0.2);
+  --mark-color: #ffffff;
+}
+
+html.theme-cyber {
+  --bg-color: #0b0f19;              /* Deep Indigo Navy */
+  --bg-card: #111827;               /* Dark Indigo Card */
+  --border-color: rgba(6, 182, 212, 0.2);
+  --border-color-muted: rgba(6, 182, 212, 0.4);
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --accent-primary: #06b6d4;        /* Cyber Cyan */
+  --accent-primary-hover: #22d3ee;
+  --accent-secondary: rgba(139, 92, 246, 0.15); /* Translucent purple */
+  --accent-secondary-hover: rgba(139, 92, 246, 0.25);
+  --accent-text: #0b0f19;
+  --mark-bg: rgba(6, 182, 212, 0.3);
+  --mark-color: #22d3ee;
+}
+
 /* Highlight color for ts_headline <mark> tags */
 mark {
-  background-color: #fde047; /* yellow-300 */
-  color: inherit;
+  background-color: var(--mark-bg);
+  color: var(--mark-color);
   border-radius: 2px;
   padding: 0 1px;
 }
