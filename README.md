@@ -2,6 +2,9 @@
 
 A self-hosted document archive with OCR and full-text search. Point it at a read-only folder of PDFs, images, and Office files; it extracts text in the background and gives you a fast search UI over everything.
 
+> [!NOTE]
+> **What is a Scriptorium?** Historically, a *scriptorium* (literally "a place for writing") was a room in medieval European monasteries devoted to the writing, copying, and illuminating of manuscripts by monastic scribes. True to its name, this app acts as your digital scriptorium—automatically copying, reading, and indexing all your documents.
+
 ---
 
 ## What it does
@@ -122,6 +125,10 @@ All variables live in `.env` (copied from `env.example`). `.env` is gitignored a
 
 ### Corpus
 
+In linguistics and natural language processing, a **corpus** (plural *corpora*) is a large, structured collection of texts or documents. In Scriptorium, your "corpus" is the folder containing all your source documents (PDFs, images, spreadsheets, etc.) that you want to index.
+
+The `CORPUS_PATH` represents the absolute host path to this folder, which Scriptorium mounts as a read-only (`:ro`) directory.
+
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `CORPUS_PATH` | yes | — | Absolute path on the Docker host to your document directory. Mounted `:ro` into every container — **originals are never written, moved, or deleted** |
@@ -172,7 +179,24 @@ Files are processed in this order:
 4. **Force OCR** (`force_ocr=True`) — re-renders every page and runs Tesseract
 5. **Render fallback** — if the PDF is digitally signed (OCRmyPDF refuses `force_ocr` on signed PDFs), uses `pdftoppm` to render pages as images and runs Tesseract directly
 
-Tesseract is configured with **English + Portuguese + German** language packs. Add more by editing `worker/Dockerfile`.
+### Multi-Language Setup
+
+By default, the OCR engine is configured with **English**, **Portuguese**, and **German** language packs. 
+
+If you want to add support for new languages (e.g., Spanish or French):
+1. **Install the Tesseract language pack**: Open [worker/Dockerfile](file:///home/rtm/GIT-REPOS/REPOS/scriptorium/worker/Dockerfile) and add the package name to the `apt-get install` list:
+   ```dockerfile
+   tesseract-ocr-spa \
+   tesseract-ocr-fra \
+   ```
+2. **Enable the language in the OCR engine**: Open [worker/ocr/engine.py](file:///home/rtm/GIT-REPOS/REPOS/scriptorium/worker/ocr/engine.py) and update the `lang` parameter in the `pytesseract.image_to_string` call (around line 153):
+   ```python
+   text = pytesseract.image_to_string(img, lang="por+deu+eng+spa+fra")
+   ```
+3. **Rebuild the workers**: Run this command to rebuild and restart all OCR worker containers:
+   ```bash
+   docker compose up -d --build ocr-worker
+   ```
 
 **Supported file types:** PDF, PNG, JPG/JPEG, TIFF, BMP, GIF, WEBP, DOCX, XLSX, XLS, ODS, TXT, CSV, TSV, MD
 
@@ -188,42 +212,6 @@ Every indexed document has a **Text** button that opens a dedicated editor page.
 - Revert a page back to the original OCR output at any time
 
 The original OCR text is always preserved in `extractions.original_text` and is never overwritten.
-
----
-
-## Reverse proxy (Nginx example)
-
-The stack does not include TLS. A minimal Nginx config for a site behind HTTPS:
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name scriptorium.example.com;
-
-    ssl_certificate     /etc/ssl/certs/scriptorium.crt;
-    ssl_certificate_key /etc/ssl/private/scriptorium.key;
-
-    location / {
-        proxy_pass         http://<vm-ip>:8000;
-        proxy_set_header   Host $host;
-        proxy_set_header   X-Real-IP $remote_addr;
-        proxy_read_timeout 120s;
-        client_max_body_size 0;
-    }
-}
-```
-
----
-
-## Updating
-
-```bash
-git pull
-docker compose build web
-docker compose up -d web
-```
-
-Only the `web` image needs a rebuild for frontend or API changes. Rebuild `ocr-worker` if you change the OCR pipeline or add Tesseract language packs.
 
 ---
 
@@ -265,3 +253,19 @@ These are intentional, not limitations:
 - **No object storage** — files are served directly from the read-only NFS mount.
 - **No semantic/vector search in v1** — `pgvector` is installed but unused; planned for a future phase.
 - **Corpus is read-only** — Scriptorium has zero write access to your original files, by design.
+
+---
+
+## What's coming next (Roadmap)
+
+We are planning to expand Scriptorium's capabilities with AI-driven tagging and intelligent search features:
+
+- **AI Support & LLM Integration**
+  - Native integration with **Ollama** (for local offline LLM runs), **OpenAI**, and **Google Gemini/Vertex AI**.
+- **Intelligent Tagging System**
+  - **Auto-Tagging**: Documents will be automatically tagged based on a combination of their folder path, file name, and extracted text.
+  - **Manual Tagging**: Direct, user-facing controls to manually add, edit, or remove tags on any document from the UI.
+  - **Quality over Quantity**: A "less is more" tagging philosophy where only high-value, relevant categories are assigned.
+  - **Multi-tag support**: Documents can have multiple tags if they match multiple categories (e.g. a water invoice would get both `bills` and `water` tags).
+- **Semantic Search**
+  - **Basic & Context-Aware Semantic Search**: Integrate vector embedding models with `pgvector` to enable conceptual, semantic search queries (e.g., searching for "proof of address" will locate utility bills or residency certificates even if the exact phrase "proof of address" is not present in the document).
