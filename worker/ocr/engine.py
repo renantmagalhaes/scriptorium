@@ -24,9 +24,12 @@ All temp files are process-local (/tmp).  Nothing is ever written back
 to CORPUS_ROOT or any NFS-mounted path.
 """
 
+import logging
 import subprocess
 import tempfile
 from pathlib import Path
+
+log = logging.getLogger("ocr.engine")
 
 # ─── Extension groups ─────────────────────────────────────────────────────────
 
@@ -175,20 +178,23 @@ def _ocrmypdf(file_path: Path) -> list[tuple[int, str]]:
                     force_ocr=force,
                     skip_text=(not force),
                     progress_bar=False,
+                    output_type="pdf",  # Skip PDF/A conversion; avoids color space & Ghostscript crashes
                 )
                 return _pdf_to_pages(out_pdf)
             except ocrmypdf.exceptions.PriorOcrFoundError:
                 # PDF already has a recognised text layer; extract it directly.
                 # If that text turns out to be garbled the caller will retry.
                 return _pdf_to_pages(file_path)
-            except ocrmypdf.exceptions.InputFileError as e:
-                # Includes DigitalSignatureError (signed PDFs that can't be re-OCR'd).
-                pages = _pdf_to_pages(file_path)
-                if pages:
-                    return pages
-                raise OCRError(
-                    f"ocrmypdf input error on {file_path.name}: {e}") from e
             except Exception as e:
+                # Fall back to direct text extraction from the original PDF if ocrmypdf fails.
+                # Crucial for encrypted, signed, or malformed PDFs that already contain character text layers.
+                log.warning("ocrmypdf failed on %s: %s. Falling back to direct text extraction.", file_path.name, e)
+                try:
+                    pages = _pdf_to_pages(file_path)
+                    if pages:
+                        return pages
+                except Exception:
+                    pass
                 raise OCRError(f"ocrmypdf failed on {file_path.name}: {e}") from e
 
         pages = _run(force=False)
