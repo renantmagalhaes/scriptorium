@@ -43,33 +43,22 @@ MISS_THRESHOLD   = int(os.environ.get("MISS_THRESHOLD", "2"))
 # Use the Admin page in the UI for intentional manual cleanup.
 PRESERVE_CATALOG = os.environ.get("PRESERVE_CATALOG", "true").lower() not in ("0", "false", "no", "off")
 
-SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({
-    # PDFs
-    ".pdf",
-    # Images (OCR)
-    ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".gif", ".webp",
-    # Plain text (read directly)
-    ".txt", ".md", ".rst", ".log", ".csv", ".tsv", ".nfo",
-    # Infrastructure / config
-    ".tf", ".tfvars", ".hcl",
-    ".yaml", ".yml",
-    ".json", ".jsonc",
-    ".toml",
-    ".ini", ".cfg", ".conf",
-    ".xml",
-    ".html", ".htm",
-    # Scripts / code
-    ".sh", ".bash", ".zsh",
-    ".py",
-    ".js", ".ts", ".jsx", ".tsx",
-    ".sql",
-    ".rb", ".go",
-    ".makefile",
-    # Spreadsheets
-    ".xlsx", ".xls", ".ods",
-    # Word documents
-    ".docx",
-})
+try:
+    from ocr.engine import ALL_EXTENSIONS as SUPPORTED_EXTENSIONS
+except ImportError:
+    SUPPORTED_EXTENSIONS = frozenset({
+        # PDFs
+        ".pdf",
+        # Images (OCR)
+        ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".gif", ".webp",
+        # Plain text (read directly)
+        ".txt", ".md", ".rst", ".log", ".csv", ".tsv", ".nfo",
+        # Spreadsheets
+        ".xlsx", ".xls", ".ods",
+        # Word documents
+        ".docx",
+    })
+
 
 logging.basicConfig(
     level=logging.INFO,

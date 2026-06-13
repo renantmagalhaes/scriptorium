@@ -56,6 +56,9 @@ export interface StatusResponse {
   recent_errors: ErrorEntry[]
   total_documents: number
   total_extractions: number
+  total_errors: number
+  page: number
+  limit: number
 }
 
 // ─── API calls ────────────────────────────────────────────────────────────────
@@ -94,8 +97,8 @@ export const searchDocs = (q: string, page = 1, limit = 20, signal?: AbortSignal
     .get<SearchResponse>('/search', { params: { q, page, limit }, signal })
     .then((r) => r.data)
 
-export const fetchStatus = () =>
-  api.get<StatusResponse>('/status').then((r) => r.data)
+export const fetchStatus = (page = 1, limit = 50) =>
+  api.get<StatusResponse>('/status', { params: { page, limit } }).then((r) => r.data)
 
 export const fetchBrowse = () =>
   api.get<BrowseResponse>('/browse').then((r) => r.data)
@@ -130,6 +133,9 @@ export interface OrphansResponse {
 
 export const triggerScan = () =>
   api.post<{ triggered: boolean }>('/admin/scan').then(r => r.data)
+
+export const retryFailedJobs = () =>
+  api.post<{ retried: number }>('/admin/retry-failed').then(r => r.data)
 
 export const fetchAdminSettings = () =>
   api.get<AdminSettings>('/admin/settings').then(r => r.data)

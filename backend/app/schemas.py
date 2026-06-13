@@ -85,3 +85,6 @@ class StatusResponse(BaseModel):
     recent_errors: list[ErrorEntry]
     total_documents: int
     total_extractions: int
+    total_errors: int
+    page: int
+    limit: int

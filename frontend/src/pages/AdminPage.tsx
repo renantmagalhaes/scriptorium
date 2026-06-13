@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   AlertTriangle, FileX, Loader2, RefreshCw, ScanSearch, ShieldCheck, ShieldOff, Trash2,
 } from 'lucide-react'
-import { fetchAdminSettings, fetchOrphans, purgeOrphans, triggerScan } from '../api/client'
+import { fetchAdminSettings, fetchOrphans, purgeOrphans, triggerScan, retryFailedJobs } from '../api/client'
 import type { OrphanDoc } from '../api/client'
 
 // ─── Confirm dialog (two-step) ────────────────────────────────────────────────
@@ -105,6 +105,22 @@ export default function AdminPage() {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting]     = useState(false)
   const [deleted, setDeleted]       = useState<number | null>(null)
+  const [retrying, setRetrying]     = useState(false)
+  const [retryResult, setRetryResult] = useState<number | null>(null)
+
+  async function handleRetryFailed() {
+    setRetrying(true)
+    setRetryResult(null)
+    try {
+      const result = await retryFailedJobs()
+      setRetryResult(result.retried)
+      setTimeout(() => setRetryResult(null), 5000)
+    } catch {
+      // Fail silently or fallback
+    } finally {
+      setRetrying(false)
+    }
+  }
 
   async function handleSync() {
     setSyncing(true)
@@ -235,6 +251,38 @@ export default function AdminPage() {
           <div className="px-5 pb-4">
             <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
               Scan triggered — the scanner will pick up new and changed files within seconds.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Retry failed jobs */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="px-5 py-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+              <RefreshCw size={15} className="text-slate-400" />
+              Retry failed jobs
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Re-queue all documents currently in the 'error' state to retry text extraction and OCR.
+            </p>
+          </div>
+          <button
+            onClick={handleRetryFailed}
+            disabled={retrying}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-slate-800 text-white hover:bg-slate-700 transition-colors font-medium disabled:opacity-50 shrink-0"
+          >
+            {retrying
+              ? <Loader2 size={14} className="animate-spin" />
+              : <RefreshCw size={14} />}
+            {retrying ? 'Retrying…' : 'Retry failed'}
+          </button>
+        </div>
+        {retryResult !== null && (
+          <div className="px-5 pb-4">
+            <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+              Re-queued {retryResult} failed job{retryResult !== 1 ? 's' : ''} successfully.
             </p>
           </div>
         )}

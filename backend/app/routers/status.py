@@ -14,6 +14,8 @@ router = APIRouter(prefix="/api/status", tags=["status"])
 @router.get("", response_model=StatusResponse)
 async def get_status(
     _: Annotated[str, Depends(get_current_user)],
+    page: int = 1,
+    limit: int = 50,
     db: AsyncSession = Depends(get_db),
 ) -> StatusResponse:
     counts_sql = text("""
@@ -22,12 +24,19 @@ async def get_status(
         GROUP  BY status
         ORDER  BY status
     """)
+    offset = max(0, (page - 1) * limit)
     errors_sql = text("""
         SELECT id, path, error_detail, updated_at
         FROM   documents
         WHERE  status = 'error'
         ORDER  BY updated_at DESC
-        LIMIT  50
+        LIMIT  :limit
+        OFFSET :offset
+    """)
+    total_errors_sql = text("""
+        SELECT COUNT(*) AS total
+        FROM   documents
+        WHERE  status = 'error'
     """)
     totals_sql = text("""
         SELECT
@@ -36,7 +45,8 @@ async def get_status(
     """)
 
     counts_rows = (await db.execute(counts_sql)).mappings().all()
-    error_rows  = (await db.execute(errors_sql)).mappings().all()
+    error_rows  = (await db.execute(errors_sql, {"limit": limit, "offset": offset})).mappings().all()
+    total_errors = (await db.execute(total_errors_sql)).scalar() or 0
     totals      = (await db.execute(totals_sql)).mappings().one()
 
     return StatusResponse(
@@ -52,4 +62,7 @@ async def get_status(
         ],
         total_documents=totals["total_documents"],
         total_extractions=totals["total_extractions"],
+        total_errors=total_errors,
+        page=page,
+        limit=limit,
     )

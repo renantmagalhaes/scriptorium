@@ -23,6 +23,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/app/ ./app/
 # Copy the compiled SPA into the location FastAPI serves as static files.
 COPY --from=frontend /frontend/dist/ ./static/
+# Copy worker's ocr module to share the supported extensions list
+COPY worker/ocr/ ./ocr/
 
 USER app
 EXPOSE 8000

@@ -1,4 +1,5 @@
 import asyncio
+import json
 from pathlib import Path
 
 import redis.asyncio as aioredis
@@ -13,12 +14,30 @@ from ..schemas import AdminSettings, OrphanDoc, OrphansResponse, PurgeRequest, P
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
+try:
+    from ocr.engine import ALL_EXTENSIONS as SUPPORTED_EXTENSIONS
+except ImportError:
+    SUPPORTED_EXTENSIONS = frozenset({
+        ".pdf",
+        ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".gif", ".webp",
+        ".txt", ".md", ".rst", ".log", ".csv", ".tsv", ".nfo",
+        ".xlsx", ".xls", ".ods",
+        ".docx"
+    })
+
 _CORPUS = Path(settings.corpus_root)
 
 
 def _find_missing(paths: list[str]) -> list[str]:
-    """Return paths that no longer exist on disk. Runs in a thread."""
-    return [p for p in paths if not (_CORPUS / p).exists()]
+    """Return paths that no longer exist on disk or have unsupported extensions. Runs in a thread."""
+    res = []
+    for p in paths:
+        path_obj = Path(p)
+        if path_obj.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            res.append(p)
+        elif not (_CORPUS / p).exists():
+            res.append(p)
+    return res
 
 
 @router.post("/scan")
@@ -100,3 +119,40 @@ async def purge_orphans(
     await db.commit()
 
     return PurgeResponse(deleted=len(safe_ids))
+
+
+@router.post("/retry-failed")
+async def retry_failed_jobs(
+    db: AsyncSession = Depends(get_db),
+    _: str = Depends(get_current_user),
+):
+    # Fetch all document IDs and paths that are in error state
+    rows = await db.execute(
+        text("SELECT id, path FROM documents WHERE status = 'error'")
+    )
+    docs = rows.fetchall()
+
+    if not docs:
+        return {"retried": 0}
+
+    # Update status to pending and clear error details in DB
+    await db.execute(
+        text("""
+            UPDATE documents
+            SET status = 'pending',
+                error_detail = NULL,
+                updated_at = NOW()
+            WHERE status = 'error'
+        """)
+    )
+    await db.commit()
+
+    # Enqueue jobs in Redis
+    async with aioredis.from_url(settings.redis_url, decode_responses=True) as r:
+        for doc in docs:
+            await r.lpush(
+                "ocr_queue",
+                json.dumps({"document_id": doc.id, "path": doc.path})
+            )
+
+    return {"retried": len(docs)}

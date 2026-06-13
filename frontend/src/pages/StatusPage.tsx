@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { AlertCircle, CheckCircle2, Clock, FileText, Loader2, RefreshCw, Zap } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Clock, FileText, Loader2, RefreshCw, Zap, ChevronLeft, ChevronRight } from 'lucide-react'
 import { fetchStatus } from '../api/client'
 import type { StatusCount } from '../api/client'
 
@@ -36,11 +36,18 @@ function formatDate(iso: string) {
 }
 
 export default function StatusPage() {
+  const [page, setPage] = useState(1)
+  const limit = 50
+
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ['status'],
-    queryFn: fetchStatus,
+    queryKey: ['status', page],
+    queryFn: () => fetchStatus(page, limit),
     refetchInterval: 15_000,   // auto-refresh every 15 s
   })
+
+  const totalPages = data ? Math.ceil(data.total_errors / limit) : 1
+  const startIndex = data && data.total_errors > 0 ? (page - 1) * limit + 1 : 0
+  const endIndex = data ? Math.min(page * limit, data.total_errors) : 0
 
   return (
     <div className="flex flex-col gap-8">
@@ -100,13 +107,13 @@ export default function StatusPage() {
             </div>
           )}
 
-          {/* ── Recent errors ─────────────────────────────────────────── */}
-          {data.recent_errors.length > 0 && (
+          {/* ── Errors Table with Pagination ──────────────────────────── */}
+          {data.total_errors > 0 && (
             <div>
               <h2 className="text-base font-semibold text-slate-800 mb-3">
-                Recent errors ({data.recent_errors.length})
+                Errors ({startIndex}–{endIndex} of {data.total_errors})
               </h2>
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 border-b border-slate-200">
@@ -120,7 +127,7 @@ export default function StatusPage() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {data.recent_errors.map((e) => (
-                        <tr key={e.id} className="hover:bg-red-50 transition-colors">
+                        <tr key={e.id} className="hover:bg-red-50/40 transition-colors">
                           <td
                             className="px-4 py-3 font-mono text-xs text-slate-700 max-w-[240px] truncate"
                             title={e.path}
@@ -141,11 +148,40 @@ export default function StatusPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination Controls Footer */}
+                {data.total_errors > limit && (
+                  <div className="px-4 py-3 flex items-center justify-between border-t border-slate-200 bg-slate-50">
+                    <div className="text-xs text-slate-500 font-medium">
+                      Showing <span className="font-semibold text-slate-700">{startIndex}</span> to{' '}
+                      <span className="font-semibold text-slate-700">{endIndex}</span> of{' '}
+                      <span className="font-semibold text-slate-700">{data.total_errors}</span> errors
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="flex items-center justify-center p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:hover:bg-white transition-colors"
+                        title="Previous page"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <button
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="flex items-center justify-center p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:hover:bg-white transition-colors"
+                        title="Next page"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {data.recent_errors.length === 0 && (
+          {data.total_errors === 0 && (
             <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
               <CheckCircle2 size={16} />
               No errors — all indexed documents processed successfully.
